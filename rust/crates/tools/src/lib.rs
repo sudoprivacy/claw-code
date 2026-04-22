@@ -652,7 +652,7 @@ pub fn mvp_tool_specs() -> Vec<ToolSpec> {
         },
         ToolSpec {
             name: "Config",
-            description: "Get or set Claude Code settings.",
+            description: "Get or set Claw Code settings.",
             input_schema: json!({
                 "type": "object",
                 "properties": {
@@ -3632,11 +3632,15 @@ fn build_agent_system_prompt(subagent_type: &str) -> Result<Vec<String>, String>
 }
 
 fn resolve_agent_model(model: Option<&str>) -> String {
-    model
-        .map(str::trim)
-        .filter(|model| !model.is_empty())
-        .unwrap_or(DEFAULT_AGENT_MODEL)
-        .to_string()
+    if let Some(m) = model.map(str::trim).filter(|m| !m.is_empty()) {
+        return m.to_string();
+    }
+    std::env::var("CLAW_MODEL")
+        .or_else(|_| std::env::var("ANTHROPIC_MODEL"))
+        .ok()
+        .map(|v| v.trim().to_string())
+        .filter(|v| !v.is_empty())
+        .unwrap_or_else(|| DEFAULT_AGENT_MODEL.to_string())
 }
 
 fn allowed_tools_for_subagent(subagent_type: &str) -> BTreeSet<String> {

@@ -244,6 +244,19 @@ impl ConfigLoader {
             || PathBuf::from(".claw.json"),
             |parent| parent.join(".claw.json"),
         );
+        let nexus_config_path = self.config_home.parent().map_or_else(
+            || {
+                PathBuf::from(".nexus")
+                    .join("sudoclaw")
+                    .join("sudoclaw_v2.json")
+            },
+            |parent| {
+                parent
+                    .join(".nexus")
+                    .join("sudoclaw")
+                    .join("sudoclaw_v2.json")
+            },
+        );
         vec![
             ConfigEntry {
                 source: ConfigSource::User,
@@ -252,6 +265,12 @@ impl ConfigLoader {
             ConfigEntry {
                 source: ConfigSource::User,
                 path: self.config_home.join("settings.json"),
+            },
+            // ~/.nexus/sudoclaw/sudoclaw_v2.json — highest-priority
+            // user-level config for provider-neutral SudoClaw setup.
+            ConfigEntry {
+                source: ConfigSource::User,
+                path: nexus_config_path,
             },
             ConfigEntry {
                 source: ConfigSource::Project,
