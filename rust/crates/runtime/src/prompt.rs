@@ -189,7 +189,7 @@ impl SystemPromptBuilder {
         let mut lines = vec!["# Environment context".to_string()];
         lines.extend(prepend_bullets(vec![
             format!(
-                "Model family: {}",
+                "Model family: SudoClaw powered by {}",
                 self.model_name.as_deref().unwrap_or(FRONTIER_MODEL_NAME)
             ),
             format!("Working directory: {cwd}"),
