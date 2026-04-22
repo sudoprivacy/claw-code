@@ -43,7 +43,8 @@ use plugins::{PluginHooks, PluginManager, PluginManagerConfig, PluginRegistry};
 use render::{MarkdownStreamState, Spinner, TerminalRenderer};
 use runtime::{
     check_base_commit, format_stale_base_warning, format_usd, load_oauth_credentials,
-    load_system_prompt, pricing_for_model, resolve_expected_base, resolve_sandbox_status,
+    load_system_prompt, load_system_prompt_with_model, pricing_for_model, resolve_expected_base,
+    resolve_sandbox_status,
     ApiClient, ApiRequest, AssistantEvent, CompactionConfig, ConfigLoader, ConfigSource,
     ContentBlock, ConversationMessage, ConversationRuntime, McpServer, McpServerManager,
     McpServerSpec, McpTool, MessageRole, ModelPricing, PermissionMode, PermissionPolicy,
@@ -4137,7 +4138,7 @@ impl LiveCli {
         allowed_tools: Option<AllowedToolSet>,
         permission_mode: PermissionMode,
     ) -> Result<Self, Box<dyn std::error::Error>> {
-        let system_prompt = build_system_prompt()?;
+        let system_prompt = build_system_prompt_for_model(Some(&model))?;
         let session_state = new_cli_session()?;
         let session = create_managed_session_handle(&session_state.session_id)?;
         let runtime = build_runtime(
@@ -6835,11 +6836,18 @@ fn short_tool_id(id: &str) -> String {
 }
 
 fn build_system_prompt() -> Result<Vec<String>, Box<dyn std::error::Error>> {
-    Ok(load_system_prompt(
+    build_system_prompt_for_model(None)
+}
+
+fn build_system_prompt_for_model(
+    model_name: Option<&str>,
+) -> Result<Vec<String>, Box<dyn std::error::Error>> {
+    Ok(load_system_prompt_with_model(
         env::current_dir()?,
         DEFAULT_DATE,
         env::consts::OS,
         "unknown",
+        model_name,
     )?)
 }
 
