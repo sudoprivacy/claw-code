@@ -126,7 +126,8 @@ impl ModelProvenance {
                 source: ModelSource::Flag,
             };
         }
-        if let Some(env_model) = env::var("ANTHROPIC_MODEL")
+        if let Some(env_model) = env::var("CLAW_MODEL")
+            .or_else(|_| env::var("ANTHROPIC_MODEL"))
             .ok()
             .map(|value| value.trim().to_string())
             .filter(|value| !value.is_empty())
@@ -1141,7 +1142,7 @@ fn bare_slash_command_guidance(command_name: &str) -> Option<String> {
 
 fn removed_auth_surface_error(command_name: &str) -> String {
     format!(
-        "`claw {command_name}` has been removed. Set ANTHROPIC_API_KEY or ANTHROPIC_AUTH_TOKEN instead."
+        "`claw {command_name}` has been removed. Set the appropriate API key environment variable (e.g. ANTHROPIC_API_KEY) instead."
     )
 }
 
@@ -1580,7 +1581,8 @@ fn resolve_repl_model(cli_model: String) -> String {
     if cli_model != DEFAULT_MODEL {
         return cli_model;
     }
-    if let Some(env_model) = env::var("ANTHROPIC_MODEL")
+    if let Some(env_model) = env::var("CLAW_MODEL")
+        .or_else(|_| env::var("ANTHROPIC_MODEL"))
         .ok()
         .map(|value| value.trim().to_string())
         .filter(|value| !value.is_empty())
@@ -9837,9 +9839,9 @@ mod tests {
     #[test]
     fn removed_login_and_logout_subcommands_error_helpfully() {
         let login = parse_args(&["login".to_string()]).expect_err("login should be removed");
-        assert!(login.contains("ANTHROPIC_API_KEY"));
+        assert!(login.contains("has been removed"));
         let logout = parse_args(&["logout".to_string()]).expect_err("logout should be removed");
-        assert!(logout.contains("ANTHROPIC_AUTH_TOKEN"));
+        assert!(logout.contains("has been removed"));
         assert_eq!(
             parse_args(&["doctor".to_string()]).expect("doctor should parse"),
             CliAction::Doctor {
