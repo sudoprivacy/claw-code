@@ -97,6 +97,7 @@ pub struct SystemPromptBuilder {
     output_style_prompt: Option<String>,
     os_name: Option<String>,
     os_version: Option<String>,
+    model_name: Option<String>,
     append_sections: Vec<String>,
     project_context: Option<ProjectContext>,
     config: Option<RuntimeConfig>,
@@ -119,6 +120,12 @@ impl SystemPromptBuilder {
     pub fn with_os(mut self, os_name: impl Into<String>, os_version: impl Into<String>) -> Self {
         self.os_name = Some(os_name.into());
         self.os_version = Some(os_version.into());
+        self
+    }
+
+    #[must_use]
+    pub fn with_model_name(mut self, model_name: impl Into<String>) -> Self {
+        self.model_name = Some(model_name.into());
         self
     }
 
@@ -181,7 +188,10 @@ impl SystemPromptBuilder {
         );
         let mut lines = vec!["# Environment context".to_string()];
         lines.extend(prepend_bullets(vec![
-            format!("Model family: {FRONTIER_MODEL_NAME}"),
+            format!(
+                "Model family: {}",
+                self.model_name.as_deref().unwrap_or(FRONTIER_MODEL_NAME)
+            ),
             format!("Working directory: {cwd}"),
             format!("Date: {date}"),
             format!(
@@ -435,14 +445,30 @@ pub fn load_system_prompt(
     os_name: impl Into<String>,
     os_version: impl Into<String>,
 ) -> Result<Vec<String>, PromptBuildError> {
+    load_system_prompt_with_model(cwd, current_date, os_name, os_version, None)
+}
+
+/// Like [`load_system_prompt`] but allows overriding the model name shown in
+/// the environment context section. When `model_name` is `None`, the default
+/// [`FRONTIER_MODEL_NAME`] is used.
+pub fn load_system_prompt_with_model(
+    cwd: impl Into<PathBuf>,
+    current_date: impl Into<String>,
+    os_name: impl Into<String>,
+    os_version: impl Into<String>,
+    model_name: Option<&str>,
+) -> Result<Vec<String>, PromptBuildError> {
     let cwd = cwd.into();
     let project_context = ProjectContext::discover_with_git(&cwd, current_date.into())?;
     let config = ConfigLoader::default_for(&cwd).load()?;
-    Ok(SystemPromptBuilder::new()
+    let mut builder = SystemPromptBuilder::new()
         .with_os(os_name, os_version)
         .with_project_context(project_context)
-        .with_runtime_config(config)
-        .build())
+        .with_runtime_config(config);
+    if let Some(name) = model_name {
+        builder = builder.with_model_name(name);
+    }
+    Ok(builder.build())
 }
 
 fn render_config_section(config: &RuntimeConfig) -> String {
