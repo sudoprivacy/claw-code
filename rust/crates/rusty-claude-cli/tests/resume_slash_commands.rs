@@ -237,8 +237,12 @@ fn resumed_status_command_emits_structured_json_when_requested() {
         .save_to_path(&session_path)
         .expect("session should persist");
 
+    // Isolate from user home config to avoid loading real config files.
+    let isolated_config_home = temp_dir.join("isolated-config");
+    fs::create_dir_all(&isolated_config_home).expect("isolated config home");
+
     // when
-    let output = run_claw(
+    let output = run_claw_with_env(
         &temp_dir,
         &[
             "--output-format",
@@ -247,6 +251,10 @@ fn resumed_status_command_emits_structured_json_when_requested() {
             session_path.to_str().expect("utf8 path"),
             "/status",
         ],
+        &[(
+            "CLAW_CONFIG_HOME",
+            isolated_config_home.to_str().expect("utf8 path"),
+        )],
     );
 
     // then

@@ -244,7 +244,9 @@ impl ConfigLoader {
             || PathBuf::from(".claw.json"),
             |parent| parent.join(".claw.json"),
         );
-        vec![
+        // Derive the user home from config_home (which is typically ~/.claw).
+        let user_home = self.config_home.parent();
+        let mut entries = vec![
             ConfigEntry {
                 source: ConfigSource::User,
                 path: user_legacy_path,
@@ -253,6 +255,18 @@ impl ConfigLoader {
                 source: ConfigSource::User,
                 path: self.config_home.join("settings.json"),
             },
+        ];
+        // SudoClaw nexus config: ~/.nexus/sudoclaw/sudoclaw_v2.json
+        if let Some(home) = user_home {
+            entries.push(ConfigEntry {
+                source: ConfigSource::User,
+                path: home
+                    .join(".nexus")
+                    .join("sudoclaw")
+                    .join("sudoclaw_v2.json"),
+            });
+        }
+        entries.extend([
             ConfigEntry {
                 source: ConfigSource::Project,
                 path: self.cwd.join(".claw.json"),
@@ -265,7 +279,8 @@ impl ConfigLoader {
                 source: ConfigSource::Local,
                 path: self.cwd.join(".claw").join("settings.local.json"),
             },
-        ]
+        ]);
+        entries
     }
 
     pub fn load(&self) -> Result<RuntimeConfig, ConfigError> {
@@ -2114,6 +2129,29 @@ mod tests {
         assert!(
             rendered.contains("model"),
             "error should suggest the closest known key, got: {rendered}"
+        );
+
+        fs::remove_dir_all(root).expect("cleanup temp dir");
+    }
+
+    #[test]
+    fn discover_includes_nexus_sudoclaw_config_path() {
+        let root = temp_dir();
+        let cwd = root.join("project");
+        let home = root.join("home");
+        fs::create_dir_all(&cwd).expect("project dir");
+        fs::create_dir_all(&home).expect("home dir");
+
+        let loader = ConfigLoader::new(&cwd, home.join(".claw"));
+        let entries = loader.discover();
+
+        let nexus_path = home
+            .join(".nexus")
+            .join("sudoclaw")
+            .join("sudoclaw_v2.json");
+        assert!(
+            entries.iter().any(|e| e.path == nexus_path),
+            "discovery chain should include ~/.nexus/sudoclaw/sudoclaw_v2.json, got: {entries:?}"
         );
 
         fs::remove_dir_all(root).expect("cleanup temp dir");

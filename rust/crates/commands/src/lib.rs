@@ -123,7 +123,7 @@ const SLASH_COMMAND_SPECS: &[SlashCommandSpec] = &[
     SlashCommandSpec {
         name: "config",
         aliases: &[],
-        summary: "Inspect Claude config files or merged sections",
+        summary: "Inspect project config files or merged sections",
         argument_hint: Some("[env|hooks|model|plugins]"),
         resume_supported: true,
     },
@@ -137,7 +137,7 @@ const SLASH_COMMAND_SPECS: &[SlashCommandSpec] = &[
     SlashCommandSpec {
         name: "memory",
         aliases: &[],
-        summary: "Inspect loaded Claude instruction memory files",
+        summary: "Inspect loaded project instruction memory files",
         argument_hint: None,
         resume_supported: true,
     },
@@ -230,7 +230,7 @@ const SLASH_COMMAND_SPECS: &[SlashCommandSpec] = &[
     SlashCommandSpec {
         name: "plugin",
         aliases: &["plugins", "marketplace"],
-        summary: "Manage Claw Code plugins",
+        summary: "Manage Sudo Code plugins",
         argument_hint: Some(
             "[list|install <path>|enable <name>|disable <name>|uninstall <id>|update <id>]",
         ),
@@ -2537,6 +2537,7 @@ pub fn resolve_skill_path(cwd: &Path, skill: &str) -> std::io::Result<PathBuf> {
     ))
 }
 
+#[allow(clippy::unnecessary_wraps)]
 fn render_mcp_report_for(
     loader: &ConfigLoader,
     cwd: &Path,
@@ -2600,6 +2601,7 @@ fn render_mcp_report_for(
     }
 }
 
+#[allow(clippy::unnecessary_wraps)]
 fn render_mcp_report_json_for(
     loader: &ConfigLoader,
     cwd: &Path,
@@ -2623,10 +2625,8 @@ fn render_mcp_report_json_for(
             // runs, the existing serializer adds `status: "ok"` below.
             match loader.load() {
                 Ok(runtime_config) => {
-                    let mut value = render_mcp_summary_report_json(
-                        cwd,
-                        runtime_config.mcp().servers(),
-                    );
+                    let mut value =
+                        render_mcp_summary_report_json(cwd, runtime_config.mcp().servers());
                     if let Some(map) = value.as_object_mut() {
                         map.insert("status".to_string(), Value::String("ok".to_string()));
                         map.insert("config_load_error".to_string(), Value::Null);
@@ -4767,7 +4767,7 @@ mod tests {
 
         // then
         assert!(help.contains("/plugin"));
-        assert!(help.contains("Summary          Manage Claw Code plugins"));
+        assert!(help.contains("Summary          Manage Sudo Code plugins"));
         assert!(help.contains("Aliases          /plugins, /marketplace"));
         assert!(help.contains("Category         Tools"));
     }
